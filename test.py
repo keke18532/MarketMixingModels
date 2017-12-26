@@ -40,7 +40,7 @@ def model(x_train, x_test, y_train, y_test):
     digital_dim = list(range(70, 101, 30))
     digital_decay = list(np.arange(0.6, 0.9, 0.2))
     final=[]
-    mini=[]
+    maxi=[]
     result=[]
     #method 1:
     for a in tv_dim:
@@ -59,12 +59,12 @@ def model(x_train, x_test, y_train, y_test):
                             modelfit=sm.ols(formula='sales_train ~ tv_train_ads+radio_train_ads+digital_train_ads+temp_train',data=x_train_ad).fit()
                             arr=[modelfit.rsquared,a,b,c,d,e,f]
                             final.append(arr)
-    getmin=min(a for (a,b,c,d,e,f,g) in final)
-    print 'train minimum r squared value:',getmin
+    getmax=max(a for (a,b,c,d,e,f,g) in final)
+    print 'train max r squared value:',getmax
     for i in final:
-        if i[0]==getmin:
-            mini.append(i)
-    for i in mini:
+        if i[0]==getmax:
+            maxi.append(i)
+    for i in maxi:
         print 'tv_dim, tv_decay, radio_dim, radio_decay, digital_dim, digital_decay: ', i[1], i[2], i[3], i[4], i[5], i[6], '\n'
         tv_test_ads=s_curve(x_test['tv_grps'],i[1],i[2])
         radio_test_ads=s_curve(x_test['radio_grps'],i[3],i[4])
@@ -73,6 +73,7 @@ def model(x_train, x_test, y_train, y_test):
         temp_test=x_test['temp']
         x_test_ad=pd.concat([x_test['tv_grps'],pd.Series(tv_test_ads),x_test['radio_grps'],pd.Series(radio_test_ads),x_test['digital_grps'],pd.Series(digital_test_ads),temp_test,pd.Series(sales_test)])
         modeltest=sm.ols(formula='sales_test ~ tv_test_ads+radio_test_ads+digital_test_ads+temp_test',data=x_test_ad).fit()
+        print modeltest.fittedvalues.shape
         print 'model test r squared: ',modeltest.rsquared
         result.append(modeltest)
     return result
