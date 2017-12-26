@@ -41,26 +41,31 @@ def plotfi(result, x_test, y_test):
     axarr[1].set_title('Grps')
     axarr2[0].set_title('Sales')
     axarr2[1].set_title('Temperature')
+    axarr[1].set_xlabel('Week')
+    axarr[0].set_ylabel('Sales')
+    axarr[1].set_ylabel('Grps')
+    axarr2[1].set_xlabel('Week')
+    axarr2[0].set_ylabel('Sales')
+    axarr2[1].set_ylabel('Temp')
     axarr[0].plot(x_test['week'].iloc[a], y_test.iloc[a], 'o-', label="Predicted Sales")
     axarr[0].plot(x_test['week'].iloc[a],model.fittedvalues.iloc[a], 'ro-', label="Predicted sales using model")
     axarr[0].legend(['Sales', 'Predicted sales using model'])
     axarr[1].bar(x_test['week'].iloc[a], x_test.iloc[a]['tv_grps'], color='b', align='center', label='tv_grps')
     axarr[1].bar(x_test['week'].iloc[a], x_test.iloc[a]['radio_grps'], color='g', align='center', label='radio_grps')
     axarr[1].bar(x_test['week'].iloc[a], x_test.iloc[a]['digital_grps'], color='r', align='center', label='digital_grps')
-    axarr[1].bar(x_test['week'].iloc[a], x_test.iloc[a]['temp'], color='c', align='center', label='temp')
-    axarr[1].legend(['tv_grps', 'radio_grps','digital_grps','temp'])
+    axarr[1].legend(['tv_grps', 'radio_grps','digital_grps'])
     axarr2[0].plot(x_test['week'].iloc[a], y_test.iloc[a], 'o-', label="Predicted Sales")
     axarr2[0].plot(x_test['week'].iloc[a],model.fittedvalues.iloc[a], 'ro-', label="Predicted sales using model")
     axarr2[0].legend(['Sales', 'Predicted sales using model'])
-    axarr2[1].plot(x_test['week'].iloc[a], x_test['temp'].iloc[a], 'o-', label="Predicted Sales")
+    axarr2[1].plot(x_test['week'].iloc[a], x_test['temp'].iloc[a], 'o-', label="temp")
     axarr2[1].legend(['temp'])
     plt.show()
 
 def model(method, x_train, x_test, y_train, y_test):
     # Run OLS regression, print summary and return results
     print 'adsmodel name:',method
-    dim_in=10#adjust dim interval
-    decay_in=0.1#adjust decay interval
+    dim_in=30#adjust dim interval
+    decay_in=0.3#adjust decay interval
     tv_dim = list(range(120, 151, dim_in))
     tv_decay = list(np.arange(0.6, 0.95, decay_in))
     radio_dim = list(range(150, 181, dim_in))
@@ -107,7 +112,7 @@ def model(method, x_train, x_test, y_train, y_test):
         result.append(modeltest)
     return result
 
-result=model('neg_exp',x_train, x_test, y_train, y_test)
+result=model('s_curve',x_train, x_test, y_train, y_test)
 plotfi(result, x_test, y_test)
 
         
