@@ -31,11 +31,6 @@ def neg_exp(grps, dim, decay):
         ads[i] = 1-np.exp(-dim*grps.iloc[i])+decay*ads[i-1]
     return ads
 
-def mean(x):
-    return sum(x)/len(x)
-
-
-
 def model(x_train, x_test, y_train, y_test):
     # Run OLS regression, print summary and return results
     tv_dim = list(range(120, 151, 30))
@@ -58,21 +53,10 @@ def model(x_train, x_test, y_train, y_test):
                             tv_train_ads=s_curve(x_train['tv_grps'],a,b)
                             radio_train_ads=s_curve(x_train['radio_grps'],c,d)
                             digital_train_ads=s_curve(x_train['digital_grps'],e,f)
-                            #tv_test_ads=s_curve(x_test['tv_grps'],a,b)
-                            #radio_test_ads=s_curve(x_test['radio_grps'],c,d)
-                            #digital_test_ads=s_curve(x_test['digital_grps'],e,f)
-                            #x_test_ad=pd.concat([x_test['tv_grps'],pd.Series(tv_test_ads)])
-                            #sales_test=y_test
                             sales_train=y_train
                             temp_train=x_train['temp']
-                            #temp_test=x_test['temp']
-                            #x_train_ad=pd.concat([x_train['tv_grps'],pd.Series(tv_train_ads),pd.Series(sales)])
                             x_train_ad=pd.concat([x_train['tv_grps'],pd.Series(tv_train_ads),x_train['radio_grps'],pd.Series(radio_train_ads),x_train['digital_grps'],pd.Series(digital_train_ads),temp_train,pd.Series(sales_train)])
-                            #x_test_ad=pd.concat([x_test['tv_grps'],pd.Series(tv_test_ads),x_test['radio_grps'],pd.Series(radio_test_ads),x_test['digital_grps'],pd.Series(digital_test_ads),temp_test,pd.Series(sales_test)])
                             modelfit=sm.ols(formula='sales_train ~ tv_train_ads+radio_train_ads+digital_train_ads+temp_train',data=x_train_ad).fit()
-                            #print 'a b c d e f:',a,b,c,d,e,f
-                            #print modelfit.summary()
-                            #print modelfit.rsquared
                             arr=[modelfit.rsquared,a,b,c,d,e,f]
                             final.append(arr)
     getmin=min(a for (a,b,c,d,e,f,g) in final)
@@ -92,6 +76,7 @@ def model(x_train, x_test, y_train, y_test):
         print 'model test r squared: ',modeltest.rsquared
         result.append(modeltest)
     return result
+
 result=model(x_train, x_test, y_train, y_test)
 
 
