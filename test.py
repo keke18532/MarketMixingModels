@@ -13,6 +13,25 @@ y=df['sales']
 x_train, x_test, y_train, y_test = train_test_split(df, y, test_size=0.2)
 print x_train.shape, y_train.shape
 print x_test.shape, y_test.shape
+
+def adsmodel(method, grps, dim, decay):
+    if method=='s_curve':
+        ads = range(len(grps))#adstock
+        ads[0] = grps.iloc[0] 
+        for i in range(1,len(grps)):
+            #print ads[i]
+            ads[i] = 1/(1+np.exp(-dim*grps.iloc[i]))+decay*ads[i-1]
+        return ads
+    if method=='neg_exp':
+        #negative exponential decay model
+        ads = list(range(len(grps)))#adstock
+        ads[0] = grps.iloc[0]
+        for i in range(1,len(grps)): 
+            ads[i] = 1-np.exp(-dim*grps.iloc[i])+decay*ads[i-1]
+        return ads
+    else:
+        print 'Model not available.'
+        
 def s_curve(grps, dim, decay):
     #s_curve adstock model
     ads = range(len(grps))#adstock
@@ -34,8 +53,11 @@ def plotfi(result, x_test, y_test):
     a=x_test['week'].argsort()
     model=result[0]#pick the first model
     f, axarr = plt.subplots(2, sharex=True)
+    f2, axarr2 = plt.subplots(2, sharex=True)
     axarr[0].set_title('Sales')
     axarr[1].set_title('Grps')
+    axarr2[0].set_title('Sales')
+    axarr2[1].set_title('Temperature')
     axarr[0].plot(x_test['week'].iloc[a], y_test.iloc[a], 'o-', label="Predicted Sales")
     axarr[0].plot(x_test['week'].iloc[a],model.fittedvalues.iloc[a], 'ro-', label="Predicted sales using model")
     axarr[0].legend(['Sales', 'Predicted sales using model'])
@@ -44,16 +66,24 @@ def plotfi(result, x_test, y_test):
     axarr[1].bar(x_test['week'].iloc[a], x_test.iloc[a]['digital_grps'], color='r', align='center', label='digital_grps')
     axarr[1].bar(x_test['week'].iloc[a], x_test.iloc[a]['temp'], color='c', align='center', label='temp')
     axarr[1].legend(['tv_grps', 'radio_grps','digital_grps','temp'])
+    axarr2[0].plot(x_test['week'].iloc[a], y_test.iloc[a], 'o-', label="Predicted Sales")
+    axarr2[0].plot(x_test['week'].iloc[a],model.fittedvalues.iloc[a], 'ro-', label="Predicted sales using model")
+    axarr2[0].legend(['Sales', 'Predicted sales using model'])
+    axarr2[1].plot(x_test['week'].iloc[a], x_test['temp'].iloc[a], 'o-', label="Predicted Sales")
+    axarr2[1].legend(['temp'])
     plt.show()
 
-def model(x_train, x_test, y_train, y_test):
+def model(method, x_train, x_test, y_train, y_test):
     # Run OLS regression, print summary and return results
-    tv_dim = list(range(120, 151, 30))
-    tv_decay = list(np.arange(0.6, 0.95, 0.3))
-    radio_dim = list(range(150, 181, 30))
-    radio_decay = list(np.arange(0.3, 0.6, 0.3))
-    digital_dim = list(range(70, 101, 30))
-    digital_decay = list(np.arange(0.6, 0.9, 0.3))
+    print 'adsmodel name:',method
+    dim_in=30#adjust dim interval
+    decay_in=0.3#adjust decay interval
+    tv_dim = list(range(120, 151, dim_in))
+    tv_decay = list(np.arange(0.6, 0.95, decay_in))
+    radio_dim = list(range(150, 181, dim_in))
+    radio_decay = list(np.arange(0.3, 0.6, decay_in))
+    digital_dim = list(range(70, 101, dim_in))
+    digital_decay = list(np.arange(0.6, 0.9, decay_in))
     final=[]
     maxi=[]
     result=[]
@@ -65,9 +95,9 @@ def model(x_train, x_test, y_train, y_test):
                     for e in digital_dim:
                         for f in digital_decay:
                             print 'a b c d e f:',a,b,c,d,e,f
-                            tv_train_ads=s_curve(x_train['tv_grps'],a,b)
-                            radio_train_ads=s_curve(x_train['radio_grps'],c,d)
-                            digital_train_ads=s_curve(x_train['digital_grps'],e,f)
+                            tv_train_ads=adsmodel(method,x_train['tv_grps'],a,b)
+                            radio_train_ads=adsmodel(method,x_train['radio_grps'],c,d)
+                            digital_train_ads=adsmodel(method,x_train['digital_grps'],e,f)
                             sales_train=y_train
                             temp_train=x_train['temp']
                             x_train_ad=pd.concat([x_train['tv_grps'],pd.Series(tv_train_ads),x_train['radio_grps'],pd.Series(radio_train_ads),x_train['digital_grps'],pd.Series(digital_train_ads),temp_train,pd.Series(sales_train)])
@@ -81,19 +111,20 @@ def model(x_train, x_test, y_train, y_test):
             maxi.append(i)
     for i in maxi:
         print 'tv_dim, tv_decay, radio_dim, radio_decay, digital_dim, digital_decay: ', i[1], i[2], i[3], i[4], i[5], i[6], '\n'
-        tv_test_ads=s_curve(x_test['tv_grps'],i[1],i[2])
-        radio_test_ads=s_curve(x_test['radio_grps'],i[3],i[4])
-        digital_test_ads=s_curve(x_test['digital_grps'],i[5],i[6])
+        tv_test_ads=adsmodel(method,x_test['tv_grps'],i[1],i[2])
+        radio_test_ads=adsmodel(method,x_test['radio_grps'],i[3],i[4])
+        digital_test_ads=adsmodel(method,x_test['digital_grps'],i[5],i[6])
         sales_test=y_test
         temp_test=x_test['temp']
         x_test_ad=pd.concat([x_test['tv_grps'],pd.Series(tv_test_ads),x_test['radio_grps'],pd.Series(radio_test_ads),x_test['digital_grps'],pd.Series(digital_test_ads),temp_test,pd.Series(sales_test)])
         modeltest=sm.ols(formula='sales_test ~ tv_test_ads+radio_test_ads+digital_test_ads+temp_test',data=x_test_ad).fit()
         print modeltest.fittedvalues.shape
         print 'model test r squared: ',modeltest.rsquared
+        print 'model test summary: ',modeltest.summary()
         result.append(modeltest)
     return result
 
-result=model(x_train, x_test, y_train, y_test)
+result=model('neg_exp',x_train, x_test, y_train, y_test)
 plotfi(result, x_test, y_test)
 
         
