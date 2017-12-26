@@ -31,23 +31,6 @@ def adsmodel(method, grps, dim, decay):
         return ads
     else:
         print 'Model not available.'
-        
-def s_curve(grps, dim, decay):
-    #s_curve adstock model
-    ads = range(len(grps))#adstock
-    ads[0] = grps.iloc[0] 
-    for i in range(1,len(grps)):
-        #print ads[i]
-        ads[i] = 1/(1+np.exp(-dim*grps.iloc[i]))+decay*ads[i-1]
-    return ads
-
-def neg_exp(grps, dim, decay):
-    #negative exponential decay model
-    ads = list(range(len(grps)))#adstock
-    ads[0] = grps.iloc[0]
-    for i in range(1,len(grps)): 
-        ads[i] = 1-np.exp(-dim*grps.iloc[i])+decay*ads[i-1]
-    return ads
 
 def plotfi(result, x_test, y_test):
     a=x_test['week'].argsort()
@@ -76,8 +59,8 @@ def plotfi(result, x_test, y_test):
 def model(method, x_train, x_test, y_train, y_test):
     # Run OLS regression, print summary and return results
     print 'adsmodel name:',method
-    dim_in=30#adjust dim interval
-    decay_in=0.3#adjust decay interval
+    dim_in=10#adjust dim interval
+    decay_in=0.1#adjust decay interval
     tv_dim = list(range(120, 151, dim_in))
     tv_decay = list(np.arange(0.6, 0.95, decay_in))
     radio_dim = list(range(150, 181, dim_in))
