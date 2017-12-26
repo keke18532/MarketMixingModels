@@ -5,15 +5,14 @@ import statsmodels.formula.api as sm
 import statsmodels.tools.tools as sm_tools
 import matplotlib.dates as dates
 import matplotlib.ticker as tkr
+import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
-from sklearn.model_selection import KFold, cross_val_score
 
 df= pd.read_csv('simulated_sales.csv')
 y=df['sales']
 x_train, x_test, y_train, y_test = train_test_split(df, y, test_size=0.2)
 print x_train.shape, y_train.shape
 print x_test.shape, y_test.shape
-
 def s_curve(grps, dim, decay):
     #s_curve adstock model
     ads = range(len(grps))#adstock
@@ -31,14 +30,30 @@ def neg_exp(grps, dim, decay):
         ads[i] = 1-np.exp(-dim*grps.iloc[i])+decay*ads[i-1]
     return ads
 
+def plotfi(result, x_test, y_test):
+    a=x_test['week'].argsort()
+    model=result[0]#pick the first model
+    f, axarr = plt.subplots(2, sharex=True)
+    axarr[0].set_title('Sales')
+    axarr[1].set_title('Grps')
+    axarr[0].plot(x_test['week'].iloc[a], y_test.iloc[a], 'o-', label="Predicted Sales")
+    axarr[0].plot(x_test['week'].iloc[a],model.fittedvalues.iloc[a], 'ro-', label="Predicted sales using model")
+    axarr[0].legend(['Sales', 'Predicted sales using model'])
+    axarr[1].bar(x_test['week'].iloc[a], x_test.iloc[a]['tv_grps'], color='b', align='center', label='tv_grps')
+    axarr[1].bar(x_test['week'].iloc[a], x_test.iloc[a]['radio_grps'], color='g', align='center', label='radio_grps')
+    axarr[1].bar(x_test['week'].iloc[a], x_test.iloc[a]['digital_grps'], color='r', align='center', label='digital_grps')
+    axarr[1].bar(x_test['week'].iloc[a], x_test.iloc[a]['temp'], color='c', align='center', label='temp')
+    axarr[1].legend(['tv_grps', 'radio_grps','digital_grps','temp'])
+    plt.show()
+
 def model(x_train, x_test, y_train, y_test):
     # Run OLS regression, print summary and return results
     tv_dim = list(range(120, 151, 30))
-    tv_decay = list(np.arange(0.6, 0.95, 0.34))
+    tv_decay = list(np.arange(0.6, 0.95, 0.3))
     radio_dim = list(range(150, 181, 30))
-    radio_decay = list(np.arange(0.3, 0.6, 0.2))
+    radio_decay = list(np.arange(0.3, 0.6, 0.3))
     digital_dim = list(range(70, 101, 30))
-    digital_decay = list(np.arange(0.6, 0.9, 0.2))
+    digital_decay = list(np.arange(0.6, 0.9, 0.3))
     final=[]
     maxi=[]
     result=[]
@@ -79,5 +94,9 @@ def model(x_train, x_test, y_train, y_test):
     return result
 
 result=model(x_train, x_test, y_train, y_test)
+plotfi(result, x_test, y_test)
 
-
+        
+    
+    
+    
