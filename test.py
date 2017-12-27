@@ -126,15 +126,15 @@ def model(method, x_train, x_test, y_train, y_test):
         test_model=modelfit(method,x_test ,y_test,i[1], i[2], i[3], i[4], i[5], i[6])
         #print test_model.fittedvalues.shape
         print 'model test r squared: ',test_model.rsquared
-        #print 'model validation summary: ',val_model.summary()
         mse = np.mean((y_test - test_model.fittedvalues)**2)#mean squared error
         mae = np.sum(np.absolute(y_test - test_model.fittedvalues))
         print 'mean squared error:',mse
         print 'mean absolute error:',mae
+        print 'model test summary: ',test_model.summary()
         result.append(test_model)
         return result
 
-result=model('s_curve',x_train, x_test, y_train, y_test)
+result=model('neg_exp',x_train, x_test, y_train, y_test)
 plotfi(result, x_test, y_test)
         
     
