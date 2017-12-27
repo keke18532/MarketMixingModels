@@ -7,7 +7,10 @@ import matplotlib.dates as dates
 import matplotlib.ticker as tkr
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
+from sklearn.model_selection import KFold
 
+
+    
 df= pd.read_csv('simulated_sales.csv')
 y=df['sales']
 x_train, x_test, y_train, y_test = train_test_split(df, y, test_size=0.2)
@@ -19,7 +22,6 @@ def adsmodel(method, grps, dim, decay):
         ads = range(len(grps))#adstock
         ads[0] = grps.iloc[0] 
         for i in range(1,len(grps)):
-            #print ads[i]
             ads[i] = 1/(1+np.exp(-dim*grps.iloc[i]))+decay*ads[i-1]
         return ads
     if method=='neg_exp':
@@ -61,6 +63,20 @@ def plotfi(result, x_test, y_test):
     axarr2[1].legend(['temp'])
     plt.show()
 
+
+def modelfit(method,x_data,y_data,a,b,c,d,e,f):
+    tv_ads=adsmodel(method,x_data['tv_grps'],a,b)
+    radio_ads=adsmodel(method,x_data['radio_grps'],c,d)
+    digital_ads=adsmodel(method,x_data['digital_grps'],e,f)
+    sales=y_data
+    temp=x_data['temp']
+    week=x_data['week']
+    x_ad=pd.concat([x_data['tv_grps'],pd.Series(tv_ads),x_data['radio_grps'],pd.Series(radio_ads),x_data['digital_grps'],pd.Series(digital_ads),temp,week,pd.Series(sales)])
+    models=sm.ols(formula='sales ~ tv_ads+radio_ads+digital_ads+temp+week',data=x_ad).fit()
+    return models
+    
+        
+
 def model(method, x_train, x_test, y_train, y_test):
     # Run OLS regression, print summary and return results
     print 'adsmodel name:',method
@@ -72,49 +88,54 @@ def model(method, x_train, x_test, y_train, y_test):
     radio_decay = list(np.arange(0.3, 0.6, decay_in))
     digital_dim = list(range(70, 101, dim_in))
     digital_decay = list(np.arange(0.6, 0.9, decay_in))
+    best=[]
     final=[]
-    maxi=[]
     result=[]
-    #method 1:
-    for a in tv_dim:
-        for b in tv_decay:
-            for c in radio_dim:
-                for d in radio_decay:
-                    for e in digital_dim:
-                        for f in digital_decay:
-                            print 'a b c d e f:',a,b,c,d,e,f
-                            tv_train_ads=adsmodel(method,x_train['tv_grps'],a,b)
-                            radio_train_ads=adsmodel(method,x_train['radio_grps'],c,d)
-                            digital_train_ads=adsmodel(method,x_train['digital_grps'],e,f)
-                            sales_train=y_train
-                            temp_train=x_train['temp']
-                            x_train_ad=pd.concat([x_train['tv_grps'],pd.Series(tv_train_ads),x_train['radio_grps'],pd.Series(radio_train_ads),x_train['digital_grps'],pd.Series(digital_train_ads),temp_train,pd.Series(sales_train)])
-                            modelfit=sm.ols(formula='sales_train ~ tv_train_ads+radio_train_ads+digital_train_ads+temp_train',data=x_train_ad).fit()
-                            arr=[modelfit.rsquared,a,b,c,d,e,f]
-                            final.append(arr)
-    getmax=max(a for (a,b,c,d,e,f,g) in final)
-    print 'train max r squared value:',getmax
-    for i in final:
-        if i[0]==getmax:
-            maxi.append(i)
-    for i in maxi:
+    iteration=0
+    kf = KFold(n_splits=2,shuffle=True)
+    for train,val in kf.split(x_train, y_train):
+        currentbest=[]
+        iteration+=1
+        print 'split:', iteration
+        #method 1:
+        for a in tv_dim:
+            for b in tv_decay:
+                for c in radio_dim:
+                    for d in radio_decay:
+                        for e in digital_dim:
+                            for f in digital_decay:
+                                #print 'a b c d e f:',a,b,c,d,e,f
+                                #np.array(x_train)[train]
+                                #print pd.DataFrame(np.array(x_train)[train])
+                                train_model=modelfit(method,x_train.reindex(train) ,y_train.reindex(train),a,b,c,d,e,f)
+                                arr=[train_model.rsquared,a,b,c,d,e,f]
+                                final.append(arr)
+                                #best.append(arr)
+                                                                    
+        getmax=max(a for (a,b,c,d,e,f,g) in final)
+        print 'xtrain_train maximum r squared value:',getmax
+        for i in final:
+            if i[0]==getmax:
+                currentbest.append(i)
+                best.append(i)
+        for i in currentbest:
+            #print 'tv_dim, tv_decay, radio_dim, radio_decay, digital_dim, digital_decay: ', i[1], i[2], i[3], i[4], i[5], i[6], '\n'
+            val_model=modelfit(method,x_train.reindex(val) ,y_train.reindex(val),i[1], i[2], i[3], i[4], i[5], i[6])
+    for i in best:
         print 'tv_dim, tv_decay, radio_dim, radio_decay, digital_dim, digital_decay: ', i[1], i[2], i[3], i[4], i[5], i[6], '\n'
-        tv_test_ads=adsmodel(method,x_test['tv_grps'],i[1],i[2])
-        radio_test_ads=adsmodel(method,x_test['radio_grps'],i[3],i[4])
-        digital_test_ads=adsmodel(method,x_test['digital_grps'],i[5],i[6])
-        sales_test=y_test
-        temp_test=x_test['temp']
-        x_test_ad=pd.concat([x_test['tv_grps'],pd.Series(tv_test_ads),x_test['radio_grps'],pd.Series(radio_test_ads),x_test['digital_grps'],pd.Series(digital_test_ads),temp_test,pd.Series(sales_test)])
-        modeltest=sm.ols(formula='sales_test ~ tv_test_ads+radio_test_ads+digital_test_ads+temp_test',data=x_test_ad).fit()
-        print modeltest.fittedvalues.shape
-        print 'model test r squared: ',modeltest.rsquared
-        print 'model test summary: ',modeltest.summary()
-        result.append(modeltest)
-    return result
+        test_model=modelfit(method,x_test ,y_test,i[1], i[2], i[3], i[4], i[5], i[6])
+        #print test_model.fittedvalues.shape
+        print 'model test r squared: ',test_model.rsquared
+        #print 'model validation summary: ',val_model.summary()
+        mse = np.mean((y_test - test_model.fittedvalues)**2)#mean squared error
+        mae = np.sum(np.absolute(y_test - test_model.fittedvalues))
+        print 'mean squared error:',mse
+        print 'mean absolute error:',mae
+        result.append(test_model)
+        return result
 
 result=model('s_curve',x_train, x_test, y_train, y_test)
 plotfi(result, x_test, y_test)
-
         
     
     
