@@ -80,7 +80,6 @@ def modelfit(method,x_data,y_data,a,b,c,d,e,f):
 
 def model(x_train, x_test, y_train, y_test):
     # Run OLS regression, print summary and return results
-    #print 'adsmodel name:',method
     dim_in=30#adjust dim interval
     decay_in=0.3#adjust decay interval
     tv_dim = list(range(120, 151, dim_in))
@@ -108,11 +107,6 @@ def model(x_train, x_test, y_train, y_test):
                                 for train,val in kf.split(x_train, y_train):
                                     iteration+=1
                                     print 'split:', iteration
-                                    #print x_train.iloc[train]
-                                    #print y_train.reindex(train)
-                                    #print 'a b c d e f:',a,b,c,d,e,f
-                                    #np.array(x_train)[train]
-                                    #print pd.DataFrame(np.array(x_train)[train])
                                     train_model=modelfit(method,x_train.iloc[train] ,y_train.iloc[train],a,b,c,d,e,f)
                                     arr=[train_model.rsquared,a,b,c,d,e,f,method]
                                     final.append(arr)
