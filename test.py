@@ -8,7 +8,8 @@ import matplotlib.ticker as tkr
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import KFold
-
+from sklearn.metrics import mean_absolute_error as mae
+from sklearn.metrics import mean_squared_error as mse
 
     
 df= pd.read_csv('simulated_sales.csv')
@@ -77,9 +78,9 @@ def modelfit(method,x_data,y_data,a,b,c,d,e,f):
     
         
 
-def model(method, x_train, x_test, y_train, y_test):
+def model(x_train, x_test, y_train, y_test):
     # Run OLS regression, print summary and return results
-    print 'adsmodel name:',method
+    #print 'adsmodel name:',method
     dim_in=30#adjust dim interval
     decay_in=0.3#adjust decay interval
     tv_dim = list(range(120, 151, dim_in))
@@ -88,53 +89,62 @@ def model(method, x_train, x_test, y_train, y_test):
     radio_decay = list(np.arange(0.3, 0.6, decay_in))
     digital_dim = list(range(70, 101, dim_in))
     digital_decay = list(np.arange(0.6, 0.9, decay_in))
+    methods=['s_curve','neg_exp']
     best=[]
-    final=[]
     result=[]
-    iteration=0
-    kf = KFold(n_splits=2,shuffle=True)
-    for train,val in kf.split(x_train, y_train):
-        currentbest=[]
-        iteration+=1
-        print 'split:', iteration
-        #method 1:
-        for a in tv_dim:
-            for b in tv_decay:
-                for c in radio_dim:
-                    for d in radio_decay:
-                        for e in digital_dim:
-                            for f in digital_decay:
-                                #print 'a b c d e f:',a,b,c,d,e,f
-                                #np.array(x_train)[train]
-                                #print pd.DataFrame(np.array(x_train)[train])
-                                train_model=modelfit(method,x_train.reindex(train) ,y_train.reindex(train),a,b,c,d,e,f)
-                                arr=[train_model.rsquared,a,b,c,d,e,f]
-                                final.append(arr)
-                                #best.append(arr)
-                                                                    
-        getmax=max(a for (a,b,c,d,e,f,g) in final)
-        print 'xtrain_train maximum r squared value:',getmax
-        for i in final:
-            if i[0]==getmax:
-                currentbest.append(i)
-                best.append(i)
-        for i in currentbest:
-            #print 'tv_dim, tv_decay, radio_dim, radio_decay, digital_dim, digital_decay: ', i[1], i[2], i[3], i[4], i[5], i[6], '\n'
-            val_model=modelfit(method,x_train.reindex(val) ,y_train.reindex(val),i[1], i[2], i[3], i[4], i[5], i[6])
+
+    #method 1:
+    for a in tv_dim:
+        for b in tv_decay:
+            for c in radio_dim:
+                for d in radio_decay:
+                    for e in digital_dim:
+                        for f in digital_decay:
+                            for method in methods:
+                                kf = KFold(n_splits=2,shuffle=True)
+                                iteration=0
+                                currentbest=[]
+                                final=[]
+                                for train,val in kf.split(x_train, y_train):
+                                    iteration+=1
+                                    print 'split:', iteration
+                                    #print x_train.iloc[train]
+                                    #print y_train.reindex(train)
+                                    #print 'a b c d e f:',a,b,c,d,e,f
+                                    #np.array(x_train)[train]
+                                    #print pd.DataFrame(np.array(x_train)[train])
+                                    train_model=modelfit(method,x_train.iloc[train] ,y_train.iloc[train],a,b,c,d,e,f)
+                                    arr=[train_model.rsquared,a,b,c,d,e,f,method]
+                                    final.append(arr)
+                                    #best.append(arr)
+                                getmax=max(final, key=lambda x: x[0])
+                                print final
+                                print getmax
+                                #getmax=max(a for (a,b,c,d,e,f,g) in final)
+                                print 'xtrain_train maximum r squared value:',getmax
+                                for i in final:
+                                    if i[0]==getmax[0]:
+                                        currentbest.append(i)
+                                        #best.append(i)
+                                for i in currentbest:
+                                    #print 'tv_dim, tv_decay, radio_dim, radio_decay, digital_dim, digital_decay: ', i[1], i[2], i[3], i[4], i[5], i[6], '\n'
+                                    val_model=modelfit(i[7],x_train.iloc[val] ,y_train.iloc[val],i[1], i[2], i[3], i[4], i[5], i[6])
+                                    arr=[val_model.rsquared,i[1], i[2], i[3], i[4], i[5], i[6],i[7]]
+                                    best.append(arr)
     for i in best:
         print 'tv_dim, tv_decay, radio_dim, radio_decay, digital_dim, digital_decay: ', i[1], i[2], i[3], i[4], i[5], i[6], '\n'
-        test_model=modelfit(method,x_test ,y_test,i[1], i[2], i[3], i[4], i[5], i[6])
+        test_model=modelfit(i[7],x_test ,y_test,i[1], i[2], i[3], i[4], i[5], i[6])
         #print test_model.fittedvalues.shape
         print 'model test r squared: ',test_model.rsquared
-        mse = np.mean((y_test - test_model.fittedvalues)**2)#mean squared error
-        mae = np.sum(np.absolute(y_test - test_model.fittedvalues))
-        print 'mean squared error:',mse
-        print 'mean absolute error:',mae
+        mse1 = mse(y_test,test_model.fittedvalues)#mean squared error
+        mae1 = mae(y_test,test_model.fittedvalues)
+        print 'mean squared error:',mse1
+        print 'mean absolute error:',mae1
         print 'model test summary: ',test_model.summary()
         result.append(test_model)
         return result
 
-result=model('neg_exp',x_train, x_test, y_train, y_test)
+result=model(x_train, x_test, y_train, y_test)
 plotfi(result, x_test, y_test)
         
     
