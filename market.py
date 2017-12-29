@@ -112,12 +112,13 @@ def model(x_train, x_test, y_train, y_test):
                                     # split the train into k sets,looping over k sets: use 1 set as validating set and k-1 sets as one train set, this is achieved internally in KFold
                                     iteration+=1
                                     print 'split:', iteration
-                                    #use train set to build model: model = a_regressor.fit()
+                                    #use train set to build model
                                     print 'train shape:',x_train.iloc[train].shape
                                     train_model=modelfit(method,x_train.iloc[train] ,y_train.iloc[train],a,b,c,d,e,f)
                                     final.append(train_model)
                                     for i in final:
                                         print 'val shape:',x_train.iloc[val].shape
+                                        #use trained model to make prediction, this works if the test data size=train data size
                                         val_model=i.predict(x_train.iloc[val])
                                         mse1=mse(y_train.iloc[val],val_model)
                                         mae1 = mae(y_train.iloc[val],val_model)
@@ -131,6 +132,7 @@ def model(x_train, x_test, y_train, y_test):
                                 
     for i in best:
         print 'test shape',x_test.shape
+        #use validated model to make prediction, this doesn't work since the test data size doesn't equal to train data size
         test_model=i[1].predict(x_test)
         print test_model.shape
         mse1 = mse(y_test,test_model)
